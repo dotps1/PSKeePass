@@ -5,12 +5,21 @@
 
     Param(
         [Parameter(
-            Mandatory = $true
+            Mandatory = $true,
+            ParameterSetName = "Password"
         )]
         [PSCredential]
         $Credential,
+
+        [Parameter(
+            ParameterSetName = "Integrated"
+        )]
+        [Bool]
+        $IntegratedSecurity = $true,
         
-        [Parameter()]
+        [Parameter(
+            Mandatory = $true
+        )]
         [ValidateScript({
             if (Test-Path -Path $_) {
                 return $true
@@ -42,23 +51,33 @@
 
     Begin {
         $compositeKey = New-Object -TypeName KeePassLib.Keys.CompositeKey
-        $compositeKey.AddUserKey(
-            [KeePassLib.Keys.KcpPassword]::new(
-                $Credential.GetNetworkCredential().Password
-            )
-        )
-        
-        if ($PSBoundParameters.ContainsKey("KeyFile")) {
-            $compositeKey.AddUserKey(
-                [KeePassLib.Keys.KcpKeyFile]::new(
-                    $KeyFile
+
+        switch ($PSCmdlet.ParameterSetName) {
+            "Password" {
+                $compositeKey.AddUserKey(
+                    [KeePassLib.Keys.KcpPassword]::new(
+                        $Credential.GetNetworkCredential().Password
+                    )
                 )
-            )
+                
+                if ($PSBoundParameters.ContainsKey("KeyFile")) {
+                    $compositeKey.AddUserKey(
+                        [KeePassLib.Keys.KcpKeyFile]::new(
+                            $KeyFile
+                        )
+                    )
+                }
+            }
+
+            "Integrated" {
+                $compositeKey.AddUserKey(
+                    [KeePassLib.Keys.KcpUserName]::new()
+                )
+            }
         }
 
         $ioConnectionInfo = New-Object -TypeName KeePassLib.Serialization.IOConnectionInfo -Property @{
             Path = "$Path"
-            UserName = $Credential.GetNetworkCredential().UserName
         }
 
         try {
