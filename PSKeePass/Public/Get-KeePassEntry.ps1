@@ -51,7 +51,7 @@
         if ($PSBoundParameters.ContainsKey("KeyFile")) {
             $compositeKey.AddUserKey(
                 [KeePassLib.Keys.KcpKeyFile]::new(
-                    "C:\Users\tmalkewitz\OneDrive\KeePass\Data\tmPCSolutions_Pword_DB.key"
+                    $KeyFile
                 )
             )
         }
