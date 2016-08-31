@@ -1,7 +1,7 @@
 #region ProviderPath
 
 $paths = @(
-    'Private'
+    'Public'
 )
 
 foreach ($path in $paths) {
