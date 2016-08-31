@@ -33,7 +33,11 @@
             }
         })]
         [String]
-        $KeyFile
+        $KeyFile,
+
+        [Parameter()]
+        [String]
+        $Title = "*"
     )
 
     Begin {
@@ -44,7 +48,7 @@
             )
         )
         
-        if ($PSBoundParameters.Contains("KeyFile")) {
+        if ($PSBoundParameters.ContainsKey("KeyFile")) {
             $compositeKey.AddUserKey(
                 [KeePassLib.Keys.KcpKeyFile]::new(
                     "C:\Users\tmalkewitz\OneDrive\KeePass\Data\tmPCSolutions_Pword_DB.key"
@@ -57,17 +61,21 @@
             UserName = $Credential.GetNetworkCredential().UserName
         }
 
-        $pwDatabase = New-Object -TypeName KeePassLib.PwDatabase
-        $pwDatabase.Open(
-            $ioConnectionInfo, $compositeKey, [KeePassLib.Interfaces.NullStatusLogger]::new()
-        )
+        try {
+            $pwDatabase = New-Object -TypeName KeePassLib.PwDatabase
+            $pwDatabase.Open(
+                $ioConnectionInfo, $compositeKey, [KeePassLib.Interfaces.NullStatusLogger]::new()
+            )
+        } catch {
+            throw $_
+        }
 
         $items = $pwDatabase.RootGroup.GetObjects($true, $true)
     }
 
     Process {
-        foreach ($item in $items) {
-            [PSObject]@{
+        foreach ($item in $items.Where({ $_.Strings.ReadSafe("Title") -like $Title })) {
+            [HashTable]@{
                 Title = $item.Strings.ReadSafe("Title")
                 UserName = $item.Strings.ReadSafe("UserName")
                 Password = $item.Strings.ReadSafe("Password")
